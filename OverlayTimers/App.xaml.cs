@@ -1,7 +1,10 @@
-﻿using System;
+﻿using H.NotifyIcon;
+
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 
@@ -10,13 +13,15 @@ namespace OverlayTimers
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application
+    public partial class App : System.Windows.Application
     {
         private OverlayWindow _overlay;
         private SettingsWindow _settingsWin;
         private AppConfig _config;
         private HwndSource _source;
         private IntPtr _overlayHwnd;
+
+        private TaskbarIcon _trayIcon;
 
         private const int WH_KEYBOARD_LL = 13;
         private const int WM_KEYDOWN = 0x0100;
@@ -59,6 +64,24 @@ namespace OverlayTimers
             }
 
             RegisterConfigHotkey();
+
+            _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
+
+            var menu = new ContextMenu();
+            var itemSettings = new MenuItem { Header = "Настройки", FontWeight = FontWeights.Bold };
+            itemSettings.Click += (s, a) => ToggleSettingsWindow();
+
+            var itemExit = new MenuItem { Header = "Выход" };
+            itemExit.Click += (s, a) => Shutdown();
+
+            menu.Items.Add(itemSettings);
+            menu.Items.Add(new Separator());
+            menu.Items.Add(itemExit);
+
+            _trayIcon.ContextMenu = menu;
+            _trayIcon.TrayMouseDoubleClick += (s, a) => ToggleSettingsWindow();
+
+            _trayIcon.ForceCreate();
         }
 
         private void RegisterConfigHotkey()
@@ -101,6 +124,16 @@ namespace OverlayTimers
             return IntPtr.Zero;
         }
 
+        private void MenuSettings_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleSettingsWindow();
+        }
+
+        private void MenuExit_Click(object sender, RoutedEventArgs e)
+        {
+            Shutdown();
+        }
+
         private void ToggleSettingsWindow()
         {
             if(_settingsWin != null && _settingsWin.IsLoaded)
@@ -124,6 +157,8 @@ namespace OverlayTimers
 
         protected override void OnExit(ExitEventArgs e)
         {
+            _trayIcon?.Dispose();
+
             UnhookWindowsHookEx(_hookId);
             UnregisterHotKey(_overlayHwnd, CONFIG_HOTKEY_ID);
             _source.RemoveHook(HwndHook);

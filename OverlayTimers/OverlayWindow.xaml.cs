@@ -80,11 +80,11 @@ namespace OverlayTimers
                 TextBlock txt = new TextBlock
                 {
                     Text = "",
-                    Foreground = Brushes.Lime,
+                    Foreground = System.Windows.Media.Brushes.Lime,
                     FontSize = 26,
                     FontWeight = FontWeights.Bold,
                     Padding = new Thickness(5),
-                    Background = new SolidColorBrush(Color.FromArgb(120, 0, 0, 0))
+                    Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(120, 0, 0, 0))
                 };
 
                 Canvas.SetLeft(txt, tSetting.X);
