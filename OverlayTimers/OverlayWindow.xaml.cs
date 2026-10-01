@@ -38,7 +38,8 @@ namespace OverlayTimers
             public TimerSettings Settings { get; set; }
             public TextBlock UIElement { get; set; }
             public DispatcherTimer Timer { get; set; }
-            public int TimeLeft { get; set; }
+            public DateTime EndTime { get; set; }
+            public bool IsRunning { get; set; }
         }
 
         public OverlayWindow()
@@ -91,29 +92,30 @@ namespace OverlayTimers
                 Canvas.SetTop(txt, tSetting.Y);
                 OverlayCanvas.Children.Add(txt);
 
-                DispatcherTimer timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                DispatcherTimer timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
 
                 var timerData = new ActiveTimerData
                 {
                     Settings = tSetting,
                     UIElement = txt,
                     Timer = timer,
-                    TimeLeft = 0
                 };
 
                 int capturedId = currentId;
                 timer.Tick += (s, e) => {
                     var data = _activeTimers[capturedId];
-                    data.TimeLeft--;
+                    double secondsLeft = (data.EndTime - DateTime.Now).TotalSeconds;
 
-                    if(data.TimeLeft <= 0)
+
+                    if(secondsLeft <= 0)
                     {
                         data.Timer.Stop();
+                        data.IsRunning = false;
                         data.UIElement.Text = "";
                     }
                     else
                     {
-                        data.UIElement.Text = $"{data.Settings.Name}: {data.TimeLeft}с";
+                        data.UIElement.Text = $"{data.Settings.Name}: {secondsLeft.ToString("F1")} с";
                     }
                 };
 
@@ -126,14 +128,12 @@ namespace OverlayTimers
             if(_activeTimers.ContainsKey(id))
             {
                 var data = _activeTimers[id];
-
-                if(data.Timer.IsEnabled && data.TimeLeft > 0)
-                {
+                if(data.IsRunning)
                     return;
-                }
 
-                data.TimeLeft = data.Settings.DurationSeconds;
-                data.UIElement.Text = $"{data.Settings.Name}: {data.TimeLeft}с";
+                data.EndTime = DateTime.Now.AddSeconds(data.Settings.DurationSeconds);
+                data.IsRunning = true;
+                data.UIElement.Text = $"{data.Settings.Name}: {data.Settings.DurationSeconds.ToString("F1")} с";
 
                 data.Timer.Start();
             }
